@@ -8,10 +8,14 @@ import scala.util.matching.Regex
 
 object RegexStringContext {
   implicit class StringContextExt(sc: StringContext) {
-    def r(argExprs: String*): Regex = macro r_impl
+    object r {
+      def apply(argExprs: String*): Regex = macro r_apply_impl
+
+      def unapplySeq(targetExpr: String): Option[Seq[String]] = macro r_unapplySeq_impl
+    }
   }
 
-  def r_impl(c: Context)(argExprs: c.Expr[String]*): c.Expr[Regex] = {
+  def r_apply_impl(c: Context)(argExprs: c.Expr[String]*): c.Expr[Regex] = {
     import c.universe._
 
     checkRegexSyntax(c, extractParts(c).mkString("X"))
@@ -26,6 +30,18 @@ object RegexStringContext {
 
     reify {
       new Regex(scExpr.splice.raw(argListExpr.splice.map(JRegex.quote): _*))
+    }
+  }
+
+  def r_unapplySeq_impl(c: Context)(targetExpr: c.Expr[String]): c.Expr[Option[Seq[String]]] = {
+    import c.universe._
+
+    checkRegexSyntax(c, extractParts(c).mkString("(.*)"))
+
+    val scExpr = c.Expr[StringContext](extractStringContext(c))
+
+    reify {
+      scExpr.splice.parts.mkString("(.*)").r.unapplySeq(targetExpr.splice)
     }
   }
 

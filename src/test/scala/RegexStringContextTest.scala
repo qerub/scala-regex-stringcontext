@@ -38,4 +38,18 @@ class RegexStringContextTest extends FunSuite {
     val e = "\\E"
     check(new Regex("foo\\Q\\E\\\\E\\Q\\Ebar"), r"foo${e}bar")
   }
+  
+  test("support for pattern matching") {
+    "foobar" match {
+      case r"foo[bar]{3}" => assert(true)
+      case _              => assert(false)
+    }
+  }
+  
+  test("support for pattern matching with parameters") {
+    "foobar" match {
+      case r"foo$x" => assert(x === "bar")
+      case _        => assert(false)
+    }
+  }
 }
