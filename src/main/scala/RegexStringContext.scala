@@ -14,23 +14,35 @@ object RegexStringContext {
   def r_impl(c: Context)(argExprs: c.Expr[String]*): c.Expr[Regex] = {
     import c.universe._
 
+    checkRegexSyntax(c, extractParts(c).mkString("X"))
+
+    def mkSeqTree(xs: Seq[c.universe.Tree]): c.universe.Tree = {
+      // TODO: Improve this somehow!
+      Apply(TypeApply(Select(Select(Select(Ident(nme.ROOTPKG), newTermName("scala")), newTermName("collection")), newTermName("Seq")), List(Ident(newTypeName("String")))), xs.toList)
+    }
+
+    val scExpr = c.Expr[StringContext](extractStringContext(c))
+    val argListExpr = c.Expr[Seq[String]](mkSeqTree(argExprs.map(_.tree)))
+
+    reify {
+      new Regex(scExpr.splice.raw(argListExpr.splice.map(JRegex.quote): _*))
+    }
+  }
+
+  private def extractStringContext(c: Context): c.universe.Tree = {
+    import c.universe._
+
     c.prefix.tree match {
-      case Apply(_, List(scTree @ Apply(_, partTrees))) => {
-        val partStrings = partTrees.map { case Literal(Constant(x: String)) => x }
+      case Select(Apply(_, List(scTree)), _) => scTree
+    }
+  }
 
-        checkRegexSyntax(c, partStrings.mkString("X"))
+  private def extractParts(c: Context): Seq[String] = {
+    import c.universe._
 
-        def mkSeqTree(xs: Seq[c.universe.Tree]): c.universe.Tree = {
-          // TODO: Improve this somehow!
-          Apply(TypeApply(Select(Select(Select(Ident(nme.ROOTPKG), newTermName("scala")), newTermName("collection")), newTermName("Seq")), List(Ident(newTypeName("String")))), xs.toList)
-        }
-
-        val scExpr = c.Expr[StringContext](scTree)
-        val argListExpr = c.Expr[Seq[String]](mkSeqTree(argExprs.map(_.tree)))
-
-        reify {
-          new Regex(scExpr.splice.raw(argListExpr.splice.map(JRegex.quote): _*))
-        }
+    c.prefix.tree match {
+      case Select(Apply(_, List(Apply(_, xs))), _) => xs map {
+        case Literal(Constant(x: String)) => x
       }
     }
   }
