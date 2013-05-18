@@ -18,7 +18,7 @@ object RegexStringContext {
       case Apply(_, List(scTree @ Apply(_, partTrees))) => {
         val partStrings = partTrees.map { case Literal(Constant(x: String)) => x }
 
-        validateRegex(c, partStrings.mkString("X"))
+        checkRegexSyntax(c, partStrings.mkString("X"))
 
         def mkSeqTree(xs: Seq[c.universe.Tree]): c.universe.Tree = {
           // TODO: Improve this somehow!
@@ -35,7 +35,7 @@ object RegexStringContext {
     }
   }
 
-  private def validateRegex(c: Context, re: String) {
+  private def checkRegexSyntax(c: Context, re: String) {
     try {
       JRegex.compile(re)
     }
