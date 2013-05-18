@@ -35,7 +35,7 @@ object RegexStringContext {
     }
   }
 
-  def validateRegex(c: Context, re: String) {
+  private def validateRegex(c: Context, re: String) {
     try {
       JRegex.compile(re)
     }
