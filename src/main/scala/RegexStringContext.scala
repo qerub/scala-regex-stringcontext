@@ -36,12 +36,14 @@ object RegexStringContext {
   def r_unapplySeq_impl(c: Context)(targetExpr: c.Expr[String]): c.Expr[Option[Seq[String]]] = {
     import c.universe._
 
-    checkRegexSyntax(c, extractParts(c).mkString("(.*)"))
+    val regex = extractParts(c).mkString("(.*)")
 
-    val scExpr = c.Expr[StringContext](extractStringContext(c))
+    checkRegexSyntax(c, regex)
+
+    val regexExpr = c.Expr[String](Literal(Constant(regex)))
 
     reify {
-      scExpr.splice.parts.mkString("(.*)").r.unapplySeq(targetExpr.splice)
+      regexExpr.splice.r.unapplySeq(targetExpr.splice)
     }
   }
 
